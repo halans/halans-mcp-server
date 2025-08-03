@@ -166,6 +166,8 @@ dist
 .yarn/install-state.gz
 .pnp.\*
 
+.claude
+
 # wrangler project
 
 .dev.vars
