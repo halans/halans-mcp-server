@@ -61,8 +61,8 @@ class HalansContentServer {
             return {
                 tools: [
                     {
-                        name: "search",
-                        description: "Search for specific content on halans.com",
+                        name: "search_content",
+                        description: "Generic search for specific content on halans.com",
                         inputSchema: {
                             type: "object",
                             properties: {
@@ -127,7 +127,7 @@ class HalansContentServer {
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             try {
                 switch (request.params.name) {
-                    case "search":
+                    case "search_content":
                         return await this.searchContent(request.params.arguments);
                     case "get_section":
                         return await this.getSection(request.params.arguments);

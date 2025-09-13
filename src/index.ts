@@ -37,9 +37,9 @@ export class MyMCP extends McpAgent {
 	}
 
 	async init() {
-		// Content search tool
+		// Generic content search tool
 		this.server.tool(
-			"search",
+			"search_content",
 			{
 				query: z.string().describe("Search query to find content on halans.com"),
 				context_lines: z.number().optional().describe("Number of context lines around matches (default: 10)")
