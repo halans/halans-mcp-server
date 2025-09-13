@@ -61,8 +61,8 @@ class HalansContentServer {
             return {
                 tools: [
                     {
-                        name: "search_content",
-                        description: "Search for specific terms in halans.com content",
+                        name: "search",
+                        description: "Search for specific content on halans.com",
                         inputSchema: {
                             type: "object",
                             properties: {
@@ -72,8 +72,8 @@ class HalansContentServer {
                                 },
                                 context_lines: {
                                     type: "number",
-                                    description: "Number of context lines around matches (default: 3)",
-                                    default: 3,
+                                    description: "Number of context lines around matches (default: 10)",
+                                    default: 10,
                                 },
                             },
                             required: ["query"],
