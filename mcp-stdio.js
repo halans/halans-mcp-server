@@ -127,7 +127,7 @@ class HalansContentServer {
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             try {
                 switch (request.params.name) {
-                    case "search_content":
+                    case "search":
                         return await this.searchContent(request.params.arguments);
                     case "get_section":
                         return await this.getSection(request.params.arguments);
