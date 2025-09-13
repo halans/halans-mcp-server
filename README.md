@@ -11,6 +11,14 @@ The MCP server provides four content querying tools:
 3. **get_full_content** - Get the complete content with optional truncation
 4. **get_content_summary** - Generate content statistics and table of contents
 
+## Available Resources
+
+The MCP server also exposes three browseable resources:
+
+1. **halans://content** - Complete content from halans.com in plain text format
+2. **halans://content-summary** - Content statistics and hierarchical table of contents
+3. **halans://articles-list** - Structured JSON list of all blog articles with titles, dates, URLs, and excerpts
+
 ## Quick Start
 
 ### Option 1: Local Stdio Server (Recommended)
@@ -128,14 +136,23 @@ node mcp-stdio.js
 └── README.md            # This file
 ```
 
-## Content Source
+## Content Sources
 
-The server fetches content from `https://halans.com/llms-full.txt` and caches it for 5 minutes to improve performance. The content includes:
+The server uses two different content sources with separate 5-minute caching:
 
-- Personal blog posts and essays
-- Technical documentation
-- Project descriptions
-- Conference notes and insights
+### Tools Content (`https://halans.com/llms-full.txt`)
+Used by search_content, get_section, get_full_content, and get_content_summary tools:
+- Complete blog content with full article text
+- Technical documentation and detailed explanations
+- Comprehensive project descriptions
+- Full conference notes and insights
+
+### Resources Content (`https://halans.com/llms.txt`) 
+Used by the browseable resources (halans://content, etc.):
+- Sorted chronological list of articles (year descending)
+- Article titles, publication dates, and URLs
+- Structured metadata for easy browsing
+- Content excerpts and summaries
 
 
 ## Test locally with MCP Inspector
@@ -184,6 +201,11 @@ For deployed Workers, you can test the MCP server using Cloudflare AI Playground
 2. Enter your deployed MCP server URL (`your-worker-url.workers.dev/sse`)
 3. Test the content querying tools directly
 
+## Run MCP inspector
+```
+npx @modelcontextprotocol/inspector@latest
+``` 
+
 ## Deployment Customization
 
 ### Custom Domain (Optional)
@@ -213,7 +235,8 @@ npx wrangler secret put CONTENT_URL
 Then access them in your Worker:
 ```typescript
 // In src/index.ts
-const contentUrl = env.CONTENT_URL || "https://halans.com/llms-full.txt";
+const toolsContentUrl = env.TOOLS_CONTENT_URL || "https://halans.com/llms-full.txt";
+const resourcesContentUrl = env.RESOURCES_CONTENT_URL || "https://halans.com/llms.txt";
 ```
 
 ## Troubleshooting
@@ -226,7 +249,7 @@ const contentUrl = env.CONTENT_URL || "https://halans.com/llms-full.txt";
    - Verify Claude Desktop configuration
 
 2. **Content Fetching Errors**
-   - Check if `https://halans.com/llms-full.txt` is accessible
+   - Check if `https://halans.com/llms-full.txt` and `https://halans.com/llms.txt` are accessible
    - Verify network connectivity from the Worker
    - Monitor Cloudflare logs for fetch errors
 
