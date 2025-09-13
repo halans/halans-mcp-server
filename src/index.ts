@@ -10,7 +10,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 // Define our MCP agent with tools
 export class MyMCP extends McpAgent {
 	server = new McpServer({
-		name: "Halans Blog Searcher",
+		name: "Halans.com Blog Searcher",
 		version: "1.0.0",
 	});
 
@@ -39,12 +39,12 @@ export class MyMCP extends McpAgent {
 	async init() {
 		// Content search tool
 		this.server.tool(
-			"search_content",
+			"search",
 			{
-				query: z.string().describe("Search query to find content"),
-				context_lines: z.number().optional().describe("Number of context lines around matches (default: 3)")
+				query: z.string().describe("Search query to find content on halans.com"),
+				context_lines: z.number().optional().describe("Number of context lines around matches (default: 10)")
 			},
-			async ({ query, context_lines = 3 }) => {
+			async ({ query, context_lines = 10 }) => {
 				try {
 					const content = await this.fetchContent();
 					const lines = content.split('\n');
@@ -62,7 +62,7 @@ export class MyMCP extends McpAgent {
 
 					if (results.length === 0) {
 						return {
-							content: [{ type: "text", text: `No matches found for "${query}"` }]
+							content: [{ type: "text", text: `No matches found for your "${query}" query` }]
 						};
 					}
 
@@ -84,7 +84,7 @@ export class MyMCP extends McpAgent {
 		this.server.tool(
 			"get_section",
 			{
-				section_title: z.string().describe("Title or heading to find in the content"),
+				section_title: z.string().describe("Main title or a heading to find in the content of halans.com"),
 				include_subsections: z.boolean().optional().describe("Include content under subsections (default: true)")
 			},
 			async ({ section_title, include_subsections = true }) => {
@@ -161,7 +161,7 @@ export class MyMCP extends McpAgent {
 					return {
 						content: [{ 
 							type: "text", 
-							text: `Content from halans.com (${content.length} characters):\n\n${truncated}`
+							text: `Content found on halans.com (${content.length} characters):\n\n${truncated}`
 						}]
 					};
 				} catch (error) {
