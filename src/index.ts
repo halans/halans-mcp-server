@@ -351,44 +351,44 @@ export class MyMCP extends McpAgent {
 			information retrieval strategy.
 
 			Use this tool when:
-			- Starting a new task and need to understand what information is available
-			- Planning which sections to retrieve or search through
-			- Getting an overview of content organization and topics covered
-			- Need to understand the scope and structure before diving into specifics
+			- Starting a new task and need to understand what information is available;
+			- Planning which sections to retrieve or search through;
+			- Getting an overview of content organization and topics covered;
+			- Need to understand the scope and structure before diving into specifics.
 
 			Parameters:
-			- None required - simply call the tool to get the complete summary
+			- None required - simply call the tool to get the complete summary.
 
 			Returns:
-			- Content statistics: Total lines, characters, estimated word count
-			- Hierarchical table of contents: All headings organized by level (H1, H2, H3, etc.)
+			- Content statistics: Total lines, characters, estimated word count;
+			- Hierarchical table of contents: All headings organized by level (H1, H2, H3, etc.);
 			- Section structure: Shows the logical organization of topics and subtopics. 
 			
 			Strategic advantages of this tool:
-			- Navigation aid: Acts like a map of the available content
-			- Efficient planning: Helps you choose the right tool for your next step
-			- Content awareness: Understand what topics are covered before searching
-			- Structure understanding: See how information is organized hierarchically
-			- Token efficiency: Small response that provides maximum structural insight
+			- Navigation aid: Acts like a map of the available content;
+			- Efficient planning: Helps you choose the right tool for your next step;
+			- Content awareness: Understand what topics are covered before searching;
+			- Structure understanding: See how information is organized hierarchically;
+			- Token efficiency: Small response that provides maximum structural insight.
 
 			Workflow integration:
-			1. Start here when beginning content exploration
-			2. Identify relevant sections for your specific needs
-			3. Use with get_section to retrieve specific areas of interest
-			4. Combine with search_content when you know what topics exist but need specific details
+			1. Start here when beginning content exploration;
+			2. Identify relevant sections for your specific needs;
+			3. Use with get_section to retrieve specific areas of interest;
+			4. Combine with search_content when you know what topics exist but need specific details.
 
 			Example usage patterns:
-			- First call get_content_summary to see available sections
-			- Then use get_section("Relevant Topic") for focused reading
-			- Or use search_content("specific term") if you know what you're looking for
-			- Use get_full_content only when you need everything
+			- First call get_content_summary to see available sections;
+			- Then use get_section("Relevant Topic") for focused reading;
+			- Or use search_content("specific term") if you know what you're looking for;
+			- Use get_full_content only when you need everything.
 
 			Best practices:
-			- Always start with this tool for new content exploration
-			- Use the heading structure to inform your get_section calls
-			- Blog posts are each contained within [START OF CONTENT] and [END OF CONTENT] blocks. Additionally they have metadata listed as [POST TITLE], [POST LINK] and [POST DATE].
-			- Reference the statistics to understand content scope
-			- Use as a "content index" throughout your session`,
+			- Always start with this tool for new content exploration;
+			- Use the heading structure to inform your get_section calls;
+			- Blog posts are each contained within [START_OF_CONTENT] and [END_OF_CONTENT] blocks. Additionally they have metadata listed as [POST_TITLE], [POST_LINK] and [POST_DATE];
+			- Reference the statistics to understand content scope;
+			- Use as a "content index" throughout your session.`,
 			{},
 			async () => {
 				try {
