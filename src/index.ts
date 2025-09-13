@@ -5,6 +5,8 @@ import { z } from "zod";
 // Cache for storing the content from halans.com
 let contentCache: string | null = null;
 let lastFetchTime = 0;
+let resourceContentCache: string | null = null;
+let lastResourceFetchTime = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Define our MCP agent with tools
@@ -33,6 +35,28 @@ export class MyMCP extends McpAgent {
 			return contentCache;
 		} catch (error) {
 			throw new Error(`Error fetching content: ${error}`);
+		}
+	}
+
+	async fetchResourceContent(): Promise<string> {
+		const now = Date.now();
+		
+		// Return cached resource content if it's still fresh
+		if (resourceContentCache && (now - lastResourceFetchTime) < CACHE_DURATION) {
+			return resourceContentCache;
+		}
+
+		try {
+			const response = await fetch("https://halans.com/llms.txt");
+			if (!response.ok) {
+				throw new Error(`Failed to fetch resource content: ${response.status}`);
+			}
+			
+			resourceContentCache = await response.text();
+			lastResourceFetchTime = now;
+			return resourceContentCache;
+		} catch (error) {
+			throw new Error(`Error fetching resource content: ${error}`);
 		}
 	}
 
@@ -109,9 +133,9 @@ export class MyMCP extends McpAgent {
 			- Results show line numbers for easy reference when using other tools`,
 			{
 				query: z.string().describe("Search query to find content on halans.com"),
-				context_lines: z.number().optional().describe("Number of context lines around matches (default: 10)")
+				context_lines: z.number().optional().describe("Number of context lines around matches (default: 5)")
 			},
-			async ({ query, context_lines = 10 }) => {
+			async ({ query, context_lines = 5 }) => {
 				try {
 					const content = await this.fetchContent();
 					const lines = content.split('\n');
@@ -185,6 +209,8 @@ export class MyMCP extends McpAgent {
 			- Use exact or partial heading names from the content structure
 			- Start with include_subsections: true for comprehensive coverage
 			- Use include_subsections: false for just section overviews
+			- Look for blog contents between [START_OF_CONTENT] and [END_OF_CONTENT] blocks.
+			- Look for metadata listed as [POST_TITLE], [POST_LINK] and [POST_DATE].
 			- Combine with get_content_summary to first see available sections`,
 			{
 				section_title: z.string().describe("Main title or a heading to find in the content of halans.com"),
@@ -292,6 +318,8 @@ export class MyMCP extends McpAgent {
 				Workflow integration:
 				- Last resort after other tools don't provide sufficient information
 				- Use when building comprehensive documentation or analysis
+				- Look for blog contents between [START_OF_CONTENT] and [END_OF_CONTENT] blocks.
+				- Look for metadata listed as [POST_TITLE], [POST_LINK] and [POST_DATE].
 				- Ideal for content migration, full-text analysis, or complete understanding tasks`,
 			{
 				max_length: z.number().optional().describe("Maximum characters to return (default: 50000)")
@@ -334,8 +362,8 @@ export class MyMCP extends McpAgent {
 			Returns:
 			- Content statistics: Total lines, characters, estimated word count
 			- Hierarchical table of contents: All headings organized by level (H1, H2, H3, etc.)
-			- Section structure: Shows the logical organization of topics and subtopics
-
+			- Section structure: Shows the logical organization of topics and subtopics. 
+			
 			Strategic advantages of this tool:
 			- Navigation aid: Acts like a map of the available content
 			- Efficient planning: Helps you choose the right tool for your next step
@@ -358,6 +386,7 @@ export class MyMCP extends McpAgent {
 			Best practices:
 			- Always start with this tool for new content exploration
 			- Use the heading structure to inform your get_section calls
+			- Blog posts are each contained within [START OF CONTENT] and [END OF CONTENT] blocks. Additionally they have metadata listed as [POST TITLE], [POST LINK] and [POST DATE].
 			- Reference the statistics to understand content scope
 			- Use as a "content index" throughout your session`,
 			{},
@@ -391,6 +420,151 @@ export class MyMCP extends McpAgent {
 						content: [{ type: "text", text: `Error generating summary: ${error}` }]
 					};
 				}
+			}
+		);
+
+		// Add resources to expose the content as browseable resources
+		this.server.resource(
+			"halans-content",
+			"halans://content",
+			{ 
+				name: "Halans.com Content Listing",
+				description: "Overview of content listing from halans.com", 
+				mimeType: "text/plain" 
+			}, 
+			async () => {
+				const content = await this.fetchResourceContent();
+				return {
+					contents: [{
+						uri: "halans://content",
+						mimeType: "text/plain",
+						text: content
+					}]
+				};
+			}
+		);
+
+		this.server.resource(
+			"halans-content-summary",
+			"halans://content-summary",
+			{
+				name: "Halans.com Content Summary",
+				description: "Summary and table of contents for halans.com content",
+				mimeType: "text/plain"
+			},
+			async () => {
+				const content = await this.fetchResourceContent();
+				const lines = content.split('\n');
+				const yearSections: {[year: string]: string[]} = {};
+				let currentYear = '';
+				let totalArticles = 0;
+				
+				for (const line of lines) {
+					const trimmedLine = line.trim();
+					
+					// Check if it's a year header (### YYYY)
+					const yearMatch = trimmedLine.match(/^###\s+(\d{4})$/);
+					if (yearMatch) {
+						currentYear = yearMatch[1];
+						yearSections[currentYear] = [];
+						continue;
+					}
+					
+					// Check if it's an article line and extract just the title
+					const articleMatch = trimmedLine.match(/^####\s+"([^"]+)"/);
+					if (articleMatch && currentYear) {
+						const title = articleMatch[1];
+						yearSections[currentYear].push(title);
+						totalArticles++;
+					}
+				}
+
+				// Build the summary with years in descending order
+				const sortedYears = Object.keys(yearSections).sort((a, b) => b.localeCompare(a));
+				const tableOfContents: string[] = [];
+				
+				for (const year of sortedYears) {
+					if (yearSections[year].length > 0) {
+						tableOfContents.push(`${year} (${yearSections[year].length} articles):`);
+						for (const title of yearSections[year]) {
+							tableOfContents.push(`  - ${title}`);
+						}
+						tableOfContents.push(''); // Empty line between years
+					}
+				}
+
+				const wordCount = content.split(/\s+/).length;
+				const charCount = content.length;
+
+				const summary = `Content Summary from halans.com:
+
+Stats:
+- ${totalArticles} articles
+- ${sortedYears.length} years covered
+- ${wordCount} words total
+- ${charCount} characters total
+
+Articles by Year:
+${tableOfContents.join('\n')}`;
+
+				return {
+					contents: [{
+						uri: "halans://content-summary",
+						mimeType: "text/plain",
+						text: summary
+					}]
+				};
+			}
+		);
+
+		this.server.resource(
+			"halans-articles-list",
+			"halans://articles-list",
+			{
+				name: "Halans.com Articles List",
+				description: "Chronological list of all blog articles with titles, dates, and links",
+				mimeType: "application/json"
+			},
+			async () => {
+				const content = await this.fetchResourceContent();
+				const lines = content.split('\n');
+				const articles: Array<{title: string, date: string, url: string, year: string}> = [];
+				let currentYear = '';
+				
+				for (const line of lines) {
+					const trimmedLine = line.trim();
+					
+					// Check if it's a year header (### YYYY)
+					const yearMatch = trimmedLine.match(/^###\s+(\d{4})$/);
+					if (yearMatch) {
+						currentYear = yearMatch[1];
+						continue;
+					}
+					
+					// Check if it's an article line (#### "Title" URL (Date))
+					const articleMatch = trimmedLine.match(/^####\s+"([^"]+)"\s+(https?:\/\/[^\s]+)\s+\((\d{4}-\d{2}-\d{2})\)$/);
+					if (articleMatch) {
+						const [, title, url, date] = articleMatch;
+						articles.push({
+							title: title,
+							url: url,
+							date: date,
+							year: currentYear
+						});
+					}
+				}
+
+				return {
+					contents: [{
+						uri: "halans://articles-list",
+						mimeType: "application/json",
+						text: JSON.stringify({
+							total: articles.length,
+							articles: articles,
+							years: [...new Set(articles.map(a => a.year))].filter(Boolean).sort((a, b) => b.localeCompare(a))
+						}, null, 2)
+					}]
+				};
 			}
 		);
 	}
